@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 from scrapy.selector import Selector
 from zhihu.items import ZhiHuItem
+from random import randint
 import scrapy
 import json
 import codecs
 import time
 
 class xpisme(scrapy.Spider):
-    name = "zhihu"
+    name = "user"
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
-    start_urls = ['https://www.zhihu.com/people/su-fei-17']
+    start_urls = ['https://www.zhihu.com/people/vinjn']
     password = 'your password'
-    email = 'your email'
-    phone = ''
+    email = 'your email' # 邮箱登录
+    phone = 'your phone' # 手机登录
     headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding':'gzip, deflate, sdch, br',
@@ -57,6 +58,7 @@ class xpisme(scrapy.Spider):
             yield scrapy.Request(url = i, meta = {'cookiejar': response.meta['cookiejar']}, callback = self.parse_item) 
 
     def parse_item(self, response):
+        time.sleep(randint(3,5))
         print 'parsing ', response.url
         item = ZhiHuItem()
         item['id'] = response.css('.zm-rich-follow-btn::attr("data-id")').extract()
@@ -77,8 +79,9 @@ class xpisme(scrapy.Spider):
         item['collections'] = response.css('.profile-navbar a[href*=collections] span::text').extract()
         item['logs'] = response.css('.profile-navbar a[href*=logs] span::text').extract()
 
-        line = json.dumps(dict(item), ensure_ascii=False) + "\n"
-        self.file.write(line)
+        if item['id']:
+            line = json.dumps(dict(item), ensure_ascii=False) + "\n"
+            self.file.write(line)
 
         followers_url = response.url + '/followers'
         yield scrapy.Request(url = followers_url , meta = {'cookiejar': response.meta['cookiejar']}, callback = self.parse_list)

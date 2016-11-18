@@ -14,12 +14,6 @@ BOT_NAME = 'zhihu'
 SPIDER_MODULES = ['zhihu.spiders']
 NEWSPIDER_MODULE = 'zhihu.spiders'
 
-# start user defined
-LOGIN_EMAIL = ''
-LOGIN_PHONE = ''
-LOGIN_PASSWORD = ''
-# end user defined
-
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = 'zhihu (+http://www.zhihu.com)'
