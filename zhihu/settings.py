@@ -65,12 +65,10 @@ DEFAULT_REQUEST_HEADERS = {
 #}
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 110,
-    'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
-    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 351,
-    'zhihu.middlewares.ProxyMiddleware': 10,
+    'zhihu.middlewares.ProxyMiddleware': 1,
 }
 PROXIES = [
-    {'ip_port': '101.53.101.172:80', 'user_pass': ''},
+    {'ip_port': '114.215.101.42:3128', 'user_pass': ''},
 ]
 
 # Enable or disable extensions
