@@ -40,10 +40,17 @@ COOKIES_DEBUG = False
 #TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-#   'Accept-Language': 'en',
-#}
+DEFAULT_REQUEST_HEADERS = {
+    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Encoding':'gzip, deflate, sdch, br',
+    'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6',
+    'Cache-Control':'max-age=0',
+    'Connection':'keep-alive',
+    'Host':'www.zhihu.com',
+    'Upgrade-Insecure-Requests':'1',
+    'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36',
+    "Referer": "http://www.zhihu.com/"
+}
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
@@ -56,6 +63,15 @@ COOKIES_DEBUG = False
 #DOWNLOADER_MIDDLEWARES = {
 #    'zhihu.middlewares.MyCustomDownloaderMiddleware': 543,
 #}
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 110,
+    'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
+    'scrapy.contrib.downloadermiddleware.retry.RetryMiddleware': 351,
+    'zhihu.middlewares.ProxyMiddleware': 10,
+}
+PROXIES = [
+    {'ip_port': '101.53.101.172:80', 'user_pass': ''},
+]
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -65,9 +81,9 @@ COOKIES_DEBUG = False
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    'zhihu.pipelines.ZhihuPipeline': 300,
-}
+#ITEM_PIPELINES = {
+#    'zhihu.pipelines.ZhihuPipeline': 300,
+#}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -89,3 +105,14 @@ ITEM_PIPELINES = {
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+
+# start MySQL config
+MySQL = {
+    'db_host' : '127.0.0.1', 
+    'db_port' : '3306',
+    'db_user' : 'program',
+    'db_password' : 'mypasswd',
+    'db_dbname': 'zhihu',
+}
+#  end  MySQL config

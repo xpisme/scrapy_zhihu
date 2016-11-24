@@ -11,12 +11,12 @@ import codecs
 class ZhihuPipeline(object):
 
     def open_spider(self, spider):
-        self.file = codecs.open('people.json', 'w', encoding='utf-8')
+        #self.file = codecs.open('people.json', 'w', encoding='utf-8')
 
     def close_spider(self, spider):
-        self.file.close()
+        #self.file.close()
 
     def process_item(self, item, spider):
-        line = json.dumps(dict(item), ensure_ascii=False) + "\n"
-        self.file.write(line)
-        return item
+        #line = json.dumps(dict(item), ensure_ascii=False) + "\n"
+        #self.file.write(line)
+        #return item
