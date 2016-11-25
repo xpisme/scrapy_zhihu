@@ -61,15 +61,14 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #DOWNLOADER_MIDDLEWARES = {
-#    'zhihu.middlewares.MyCustomDownloaderMiddleware': 543,
+#    'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 110,
+#    'zhihu.middlewares.ProxyMiddleware': 1,
 #}
-DOWNLOADER_MIDDLEWARES = {
-    'scrapy.contrib.downloadermiddleware.httpproxy.HttpProxyMiddleware': 110,
-    'zhihu.middlewares.ProxyMiddleware': 1,
-}
-PROXIES = [
-    {'ip_port': '114.215.101.42:3128', 'user_pass': ''},
-]
+#PROXIES = [
+#    {'ip_port': '123.57.180.234:3128', 'user_pass': ''},
+#    {'ip_port': '60.207.14.249:3128', 'user_pass': ''},
+#    {'ip_port': '60.207.239.245:3128', 'user_pass': ''},
+#]
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -108,7 +107,7 @@ PROXIES = [
 # start MySQL config
 MySQL = {
     'db_host' : '127.0.0.1', 
-    'db_port' : '3306',
+    'db_port' : 3306,
     'db_user' : 'program',
     'db_password' : 'mypasswd',
     'db_dbname': 'zhihu',
