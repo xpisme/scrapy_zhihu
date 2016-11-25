@@ -79,7 +79,7 @@ class user(scrapy.Spider):
             yield scrapy.Request(url = i, meta = {'cookiejar': response.meta['cookiejar']}, callback = self.parse_item) 
 
     def parse_item(self, response):
-        time.sleep(randint(3,5))
+        time.sleep(randint(1,3))
         print 'parsing ', response.url
         zhihu_item = ZhiHuItem()
         zhihu_item['id'] = response.css('.zm-rich-follow-btn::attr("data-id")').extract()
@@ -132,5 +132,6 @@ class user(scrapy.Spider):
     def parse_list(self, response):
         url_list = response.css('.zm-item-link-avatar::attr("href")').extract()
         for i in url_list:
+            time.sleep(randint(1,2))
             people_url = self.base_url + i
             yield scrapy.Request(url = people_url, meta = {'cookiejar': response.meta['cookiejar']}, callback = self.parse_item)
