@@ -14,26 +14,36 @@ class user(scrapy.Spider):
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
     start_urls = [
-        "https://www.zhihu.com/people/jixin#hilightbadge",
-        "https://www.zhihu.com/people/delphi#hilightbadge",
-        "https://www.zhihu.com/people/yolfilm#hilightbadge",
-        "https://www.zhihu.com/people/zhang-xiao-bei#hilightbadge",
-        "https://www.zhihu.com/people/guanyadi#hilightbadge",
-        "https://www.zhihu.com/people/mali#hilightbadge",
-        "https://www.zhihu.com/people/yeka#hilightbadge",
-        "https://www.zhihu.com/people/sunlau#hilightbadge",
-        "https://www.zhihu.com/people/lspanv",
-        "https://www.zhihu.com/people/billhan#hilightbadge",
-        "https://www.zhihu.com/people/lai-ni#hilightbadge",
-        "https://www.zhihu.com/people/miloyip#hilightbadge",
-        "https://www.zhihu.com/people/suithink#hilightbadge",
-        "https://www.zhihu.com/people/cainiao#hilightbadge",
-        "https://www.zhihu.com/people/highburyboy#hilightbadge",
-        "https://www.zhihu.com/people/jun-yang#hilightbadge",
-        "https://www.zhihu.com/people/shi-wei-shu#hilightbadge",
-        "https://www.zhihu.com/people/hibreeze#hilightbadge",
-        "https://www.zhihu.com/people/warfalcon#hilightbadge",
-        "https://www.zhihu.com/people/ringo#hilightbadge",
+       "https://www.zhihu.com/people/whale",
+       "https://www.zhihu.com/people/Dian",
+       "https://www.zhihu.com/people/oliverc",
+       "https://www.zhihu.com/people/jixin",
+       "https://www.zhihu.com/people/fanquanquan",
+       "https://www.zhihu.com/people/amonjok",
+       "https://www.zhihu.com/people/delphi",
+       "https://www.zhihu.com/people/yolfilm",
+       "https://www.zhihu.com/people/yuxinlie",
+       "https://www.zhihu.com/people/fu-er",
+       "https://www.zhihu.com/people/woody",
+       "https://www.zhihu.com/people/zhao-wei",
+       "https://www.zhihu.com/people/vinciarts",
+       "https://www.zhihu.com/people/zhaoyang",
+       "https://www.zhihu.com/people/zhong-jia",
+       "https://www.zhihu.com/people/chengyuan",
+       "https://www.zhihu.com/people/shijun",
+       "https://www.zhihu.com/people/mafada",
+       "https://www.zhihu.com/people/shen-yin",
+       "https://www.zhihu.com/people/he-xiao-fei",
+       "https://www.zhihu.com/people/huo-hua-wu-guo-hong",
+       "https://www.zhihu.com/people/zhao-ya-xing",
+       "https://www.zhihu.com/people/BenInCanada",
+       "https://www.zhihu.com/people/yang-xiao-wei",
+       "https://www.zhihu.com/people/fuyuan",
+       "https://www.zhihu.com/people/webryan",
+       "https://www.zhihu.com/people/gevin",
+       "https://www.zhihu.com/people/qichong",
+       "https://www.zhihu.com/people/learno",
+       "https://www.zhihu.com/people/suchangmao",
     ]
     password = ''
     email = ''
@@ -57,6 +67,7 @@ class user(scrapy.Spider):
     def post_login(self, response):
         print response.css('title::text')[0].extract()
         xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
+        time.sleep(randint(1,2))
         if self.phone:
             return scrapy.FormRequest(
                 'http://www.zhihu.com/login/phone_num',
@@ -76,10 +87,10 @@ class user(scrapy.Spider):
 
     def after_login(self, response):
         for i in self.start_urls:
+            time.sleep(randint(1,2))
             yield scrapy.Request(url = i, meta = {'cookiejar': response.meta['cookiejar']}, callback = self.parse_item) 
 
     def parse_item(self, response):
-        time.sleep(randint(1,3))
         print 'parsing ', response.url
         zhihu_item = ZhiHuItem()
         zhihu_item['id'] = response.css('.zm-rich-follow-btn::attr("data-id")').extract()
