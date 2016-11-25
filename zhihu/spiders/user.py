@@ -35,9 +35,9 @@ class user(scrapy.Spider):
         "https://www.zhihu.com/people/warfalcon#hilightbadge",
         "https://www.zhihu.com/people/ringo#hilightbadge",
     ]
-    password = 'guoxinpeng'
+    password = ''
     email = ''
-    phone = '18811040172'
+    phone = ''
     headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding':'gzip, deflate, sdch, br',
