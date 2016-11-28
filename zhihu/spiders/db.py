@@ -9,16 +9,13 @@ import json
 import codecs
 import time
 
-class user(scrapy.Spider):
-    name = "user"
+class db(scrapy.Spider):
+    name = "db"
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
     start_urls = [
         'https://www.zhihu.com/topic/19608426/followers',
     ]
-    password = 'guoxinpeng'
-    email = ''
-    phone = '18811040172'
     headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding':'gzip, deflate, sdch, br',
@@ -33,81 +30,19 @@ class user(scrapy.Spider):
     }
 
     def start_requests(self):
-        yield scrapy.Request(url = "http://www.zhihu.com/#signin", meta = {'cookiejar':1}, headers = self.headers, callback = self.post_login)
+        offset = 560
+        while True :
+            write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
+            res = write_db.query('select * from url where status = 0 limit '+ str(offset) +'10', ())
+            offset = offset + 10
+            for i in res:
+                print i['url']
+                time.sleep(1.5)
+                yield scrapy.Request(url = self.base_url + i['url'], headers = self.headers, callback = self.parse_item)
+        
         #重写了爬虫类的方法, 实现了自定义请求, 运行成功后会调用callback回调函数
 
-    def post_login(self, response):
-        xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
-        if self.phone:
-            return scrapy.FormRequest(
-                'http://www.zhihu.com/login/phone_num',
-                meta={'cookiejar': response.meta['cookiejar']},
-                formdata={'_xsrf': xsrf, 'password': self.password, 'remember_me' : "True", 'phone_num':self.phone},
-                callback=self.set_refer,
-                dont_filter=True
-            )
-        else:
-            return scrapy.FormRequest(
-                'http://www.zhihu.com/login/email',
-                meta={'cookiejar': response.meta['cookiejar']},
-                formdata={'_xsrf': xsrf, 'password': self.password, 'captcha_type': 'cn', 'remember_me' : "True", 'email':self.email},
-                callback=self.set_refer,
-                dont_filter=True
-            )
-
-    def set_refer(self, response):
-        print '--------------------set_refer------------------'
-        yield scrapy.Request(url = "https://www.zhihu.com/topic/19608426/followers", meta = {'cookiejar': 1},  callback=self.parse_follower)
-
-    def parse_follower(self, response):
-        scrapy_url = response.url
-        print 'parse topic follower'
-        urls = response.css('.zm-list-avatar-medium::attr("href")').extract()
-        self.parse_urls(urls)
-        time.sleep(randint(1, 2))
-        print 'start topic json'
-        xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
-        headers = self.headers
-        headers['X-Xsrftoken'] = xsrf
-        print 'start  offset  end'
-        self.start = response.css('.zm-person-item::attr("id")')[-1].extract().encode('utf-8')[3:]
-        self.offset = 40
-        self.end = False
-
-        while (not self.end) :
-            print 'request json'
-            time.sleep(randint(1, 2))
-            yield scrapy.FormRequest(
-                url = scrapy_url,
-                meta = {'cookiejar': response.meta['cookiejar']},
-                formdata = {'offset' : str(self.offset), 'start' : self.start},
-                callback = self.parse_json,
-                headers = headers,
-                dont_filter = True
-            )
-
-    def parse_json(self, response):
-        print 'parsing '
-        print response.url
-        print self.start
-        print self.offset
-        jsonresponse = json.loads(response.body_as_unicode())
-        body = jsonresponse['msg'][1]
-        if jsonresponse['msg'][0] < 20:
-            self.end = True
-        self.offset = self.offset + 20
-        self.start = Selector(text=body).css('.zm-person-item::attr("id")')[-1].extract().encode('utf-8')[3:]
-        urls = Selector(text=body).css('.zm-list-avatar-medium::attr("href")').extract()
-        yield self.parse_urls(urls)
-
-    def parse_urls(self, urls):
-        write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
-        for i in urls:
-            sql = """insert ignore into url(url) values (%s)"""
-            print """insert ignore into url(url) values ('"""+ i  +"""')"""
-            resQuery = write_db.execute(sql, (i))
-        write_db.__delete__()
-
+   
     def parse_item(self, response):
         print 'parsing response  ', response.url
         zhihu_item = ZhiHuItem()
@@ -146,11 +81,14 @@ class user(scrapy.Spider):
         zhihu_item['posts'] = zhihu_item['posts'][0].encode('utf-8') if zhihu_item['posts'] else 0
         zhihu_item['collections'] = zhihu_item['collections'][0].encode('utf-8') if zhihu_item['collections'] else 0
         zhihu_item['logs'] = zhihu_item['logs'][0].encode('utf-8') if zhihu_item['logs'] else 0
+        print zhihu_item
         
         if zhihu_item['id']:
            print '----> db <----'
            write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
            sql = """insert ignore into user (u_id, name, avatar, remark, agree, thanks, location, business, gender, employment, education, education_extra, asks, answers, posts, collections, logs, url) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
            resQuery = write_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], response.url))
+
+           write_db.execute('update url set status = 1 where url = %s limit 1', (response.url)[21:])
            write_db.__delete__()
            print 'resQuery -------   ', resQuery
