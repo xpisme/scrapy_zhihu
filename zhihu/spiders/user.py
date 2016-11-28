@@ -14,7 +14,6 @@ class user(scrapy.Spider):
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
     start_urls = [
-        'https://www.zhihu.com/topic/19552249/followers',
     ]
     password = 'guoxinpeng'
     email = ''
@@ -57,14 +56,14 @@ class user(scrapy.Spider):
 
     def set_refer(self, response):
         print '--------------------set_refer------------------'
-        yield scrapy.Request(url = "https://www.zhihu.com/topic/19552249/followers", meta = {'cookiejar': 1},  callback=self.parse_follower)
+        yield scrapy.Request(url = "https://www.zhihu.com/topic/19553622/followers", meta = {'cookiejar': 1},  callback=self.parse_follower)
 
     def parse_follower(self, response):
         scrapy_url = response.url
         print 'parse topic follower'
         urls = response.css('.zm-list-avatar-medium::attr("href")').extract()
         self.parse_urls(urls)
-        time.sleep(randint(20, 25))
+        time.sleep(randint(1, 2))
         print 'start topic json'
         xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
         headers = self.headers
@@ -76,7 +75,7 @@ class user(scrapy.Spider):
 
         while (not self.end) :
             print 'request json'
-            time.sleep(randint(20, 25))
+            time.sleep(randint(1, 2))
             yield scrapy.FormRequest(
                 url = scrapy_url,
                 meta = {'cookiejar': response.meta['cookiejar']},
@@ -101,12 +100,12 @@ class user(scrapy.Spider):
         yield self.parse_urls(urls)
 
     def parse_urls(self, urls):
-        print urls 
+        write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
         for i in urls:
-            i = self.base_url + i
-            print 'parsing ', i
-            time.sleep(randint(1,2))
-            yield scrapy.Request(url = i, headers = self.headers, callback = self.parse_item)
+            sql = """insert ignore into url(url) values (%s)"""
+            print """insert ignore into url(url) values ('"""+ i  +"""')"""
+            resQuery = write_db.execute(sql, (i))
+        write_db.__delete__()
 
     def parse_item(self, response):
         print 'parsing response  ', response.url
