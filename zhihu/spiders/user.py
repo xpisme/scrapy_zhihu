@@ -39,7 +39,6 @@ class user(scrapy.Spider):
     def post_login(self, response):
         xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
         if self.phone:
-            print 'xxxxx'
             return scrapy.FormRequest(
                 'http://www.zhihu.com/login/phone_num',
                 meta={'cookiejar': response.meta['cookiejar']},
@@ -65,6 +64,7 @@ class user(scrapy.Spider):
         print 'parse topic follower'
         urls = response.css('.zm-list-avatar-medium::attr("href")').extract()
         self.parse_urls(urls)
+        time.sleep(randint(20, 25))
         print 'start topic json'
         xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
         headers = self.headers
@@ -73,11 +73,10 @@ class user(scrapy.Spider):
         self.start = response.css('.zm-person-item::attr("id")')[-1].extract().encode('utf-8')[3:]
         self.offset = 40
         self.end = False
-        print self.start
 
         while (not self.end) :
             print 'request json'
-            time.sleep(randint(1, 2))
+            time.sleep(randint(20, 25))
             yield scrapy.FormRequest(
                 url = scrapy_url,
                 meta = {'cookiejar': response.meta['cookiejar']},
@@ -86,12 +85,6 @@ class user(scrapy.Spider):
                 headers = headers,
                 dont_filter = True
             )
-
-    def parse_urls(self, urls):
-        for url in urls:
-            print 'parsing ', url
-            time.sleep(randint(1,2))
-            #yield scrapy.Request(url = url, callback = self.parse_item) 
 
     def parse_json(self, response):
         print 'parsing '
@@ -107,8 +100,16 @@ class user(scrapy.Spider):
         urls = Selector(text=body).css('.zm-list-avatar-medium::attr("href")').extract()
         yield self.parse_urls(urls)
 
+    def parse_urls(self, urls):
+        print urls 
+        for i in urls:
+            i = self.base_url + i
+            print 'parsing ', i
+            time.sleep(randint(1,2))
+            yield scrapy.Request(url = i, headers = self.headers, callback = self.parse_item)
+
     def parse_item(self, response):
-        print 'parsing ', response.url
+        print 'parsing response  ', response.url
         zhihu_item = ZhiHuItem()
         zhihu_item['id'] = response.css('.zm-rich-follow-btn::attr("data-id")').extract()
         zhihu_item['name'] = response.css('.title-section  .name::text').extract()
@@ -153,5 +154,3 @@ class user(scrapy.Spider):
            resQuery = write_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], response.url))
            write_db.__delete__()
            print 'resQuery -------   ', resQuery
-
-
