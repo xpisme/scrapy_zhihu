@@ -13,6 +13,7 @@ class one(scrapy.Spider):
     name = "one"
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
+    # 游戏 game
     start_urls = [
        # "https://www.zhihu.com/topic/19550994/followers",
        # "https://www.zhihu.com/topic/19553732/followers",
