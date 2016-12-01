@@ -8,12 +8,12 @@ import scrapy
 import json
 import codecs
 import time
+import os
 
 class one(scrapy.Spider):
     name = "one"
     base_url = 'https://www.zhihu.com'
     allowed_domains = ["www.zhihu.com"]
-    # 互联网 internet
     start_urls = [
     ]
     password = 'mypasswd'
@@ -87,10 +87,13 @@ class one(scrapy.Spider):
         while (self.offset < 10000) :
             if self.offset > 12000 :
                 print 'xxxxxxxxxxxxx'
-                exit()
+                os.system("sh /tmp/scrapy_zhihu.sh")
             if self.end:
                 print 'xxxxxxxxxxxxx'
-                exit()
+                #/tmp/scrapy_zhihu.sh 内容
+                #ps aux | grep crawl | grep one | awk '{print $2}' | xargs -i kill -9 {}
+                #cd /home/xpisme/study/scrapy/scrapy_zhihu/zhihu/spiders && scrapy crawl one
+                os.system("sh /tmp/scrapy_zhihu.sh")
             print 'request json'
             time.sleep(0.9)
             yield scrapy.FormRequest(
