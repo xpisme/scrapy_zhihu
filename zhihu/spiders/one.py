@@ -84,7 +84,7 @@ class one(scrapy.Spider):
         self.offset = 40
         self.end = False
 
-        while (self.offset < 10000) :
+        while (True) :
             if self.offset > 12000 :
                 print 'xxxxxxxxxxxxx'
                 os.system("sh /tmp/scrapy_zhihu.sh")
