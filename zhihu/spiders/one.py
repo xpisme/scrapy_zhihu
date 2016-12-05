@@ -16,9 +16,9 @@ class one(scrapy.Spider):
     allowed_domains = ["www.zhihu.com"]
     start_urls = [
     ]
-    password = 'mypasswd'
+    password = 'password'
     email = ''
-    phone = '手机号'
+    phone = 'phone'
     headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding':'gzip, deflate, sdch, br',
@@ -57,17 +57,19 @@ class one(scrapy.Spider):
 
     def set_refer(self, response):
         print '--------------------set_refer------------------'
-        master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
-        sql = """select * from topic_url where status = 0 limit 1"""
-        res = master_db.query(sql, ())
-        if res:
-            url = res[0]['url']
-            sql = """update topic_url set status = 1 where id = %s limit 1"""
-            master_db.execute(sql, ( str(res[0]['id'])) )
-        master_db.__delete__()
+        if response.status == 200:
+            master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
+            sql = """select * from topic_url where status = 0 limit 1"""
+            res = master_db.query(sql, ())
+            print res
+            if res:
+                url = res[0]['url']
+                sql = """update topic_url set status = 1 where id = %s limit 1"""
+                master_db.execute(sql, ( str(res[0]['id'])) )
+            master_db.__delete__()
 
-        topic_url = self.base_url + url + """/followers"""
-        yield scrapy.Request(url = topic_url, meta = {'cookiejar': 1},  callback=self.parse_follower)
+            topic_url = self.base_url + url + """/followers"""
+            yield scrapy.Request(url = topic_url, meta = {'cookiejar': 1},  callback=self.parse_follower)
 
     def parse_follower(self, response):
         scrapy_url = response.url
@@ -85,15 +87,13 @@ class one(scrapy.Spider):
         self.end = False
 
         while (True) :
-            if self.offset > 12000 :
-                print 'xxxxxxxxxxxxx'
-                os.system("sh /tmp/scrapy_zhihu.sh")
-            if self.end:
+            if self.offset > 12000 or self.end:
                 print 'xxxxxxxxxxxxx'
                 #/tmp/scrapy_zhihu.sh 内容
                 #ps aux | grep crawl | grep one | awk '{print $2}' | xargs -i kill -9 {}
                 #cd /home/xpisme/study/scrapy/scrapy_zhihu/zhihu/spiders && scrapy crawl one
-                os.system("sh /tmp/scrapy_zhihu.sh")
+                #os.system("sh /tmp/scrapy_zhihu.sh")
+                exit()
             print 'request json'
             time.sleep(0.9)
             yield scrapy.FormRequest(
