@@ -27,13 +27,24 @@ class user(scrapy.Spider):
         "Origin" : "https://www.zhihu.com"
     }
 
+    def errback_httpbin(self, failure):
+        url = failure.request.url
+        print failure
+        sql = """update url set status = 1 where url = %s"""
+        self.master_db.execute(sql, (url[21:]))
+        self.master_db.__delete__()
+
     def start_requests(self):
         #重写了爬虫类的方法, 实现了自定义请求, 运行成功后会调用callback回调函数
         print '--------------------set_refer------------------'
         request_url = self.get_url()
         if request_url:
             print request_url
-            yield scrapy.Request(url = request_url, headers=self.headers, callback=self.parse_item)
+            yield scrapy.Request(url=request_url, 
+            headers=self.headers, 
+            callback=self.parse_item, 
+            dont_filter=True, 
+            errback=self.errback_httpbin)
 
     def get_employment(self, employments):
         if not len(employments):
@@ -47,17 +58,17 @@ class user(scrapy.Spider):
                 return 0
 
     def get_url(self):
-        master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
+        self.master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
         sql = """select * from url where status = 0 limit 1"""
-        res = master_db.query(sql, ())
+        res = self.master_db.query(sql, ())
         if not res:
-            master_db.__delete__()
+            self.master_db.__delete__()
             return False
         url = res[0]['url']
-        master_db.__delete__()
         request_url = self.base_url + url
         return request_url
-
+    
+    
     def parse_item(self, response):
         print 'parsing response  ', response.url
         body = response.css('#data::attr("data-state")')[0].extract().encode('utf-8')
@@ -97,7 +108,6 @@ class user(scrapy.Spider):
         print zhihu_item
         if zhihu_item['id']:
            print '----> db <----'
-           master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
            sql = """insert ignore into user (
            u_id, name, avatar, remark, 
            agree, thanks, location, business, 
@@ -114,8 +124,8 @@ class user(scrapy.Spider):
            %s, %s, %s, %s, 
            %s, %s, %s, %s, 
            %s) """
-           resQuery = master_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], zhihu_item['url'], zhihu_item['following'], zhihu_item['followers'], zhihu_item['lives'], zhihu_item['topics'], zhihu_item['columns'], zhihu_item['questions'], zhihu_item['weibo']))
+           self.master_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], zhihu_item['url'], zhihu_item['following'], zhihu_item['followers'], zhihu_item['lives'], zhihu_item['topics'], zhihu_item['columns'], zhihu_item['questions'], zhihu_item['weibo']))
            sql = """update url set status = 1 where url = %s"""
-           master_db.execute(sql, (zhihu_item['url']))
-           master_db.__delete__()
+           self.master_db.execute(sql, (zhihu_item['url']))
+           self.master_db.__delete__()
 
