@@ -5,19 +5,15 @@ from zhihu.settings import MySQL
 from random import randint
 from imysql import DB
 import scrapy
-import json
-import codecs
 import time
+import json
 
 class user(scrapy.Spider):
     name = "user"
     base_url = 'https://www.zhihu.com'
-    allowed_domains = ["www.zhihu.com"]
+    allowed_domains = ["www.zhihu.com", "xpisme.com"]
     start_urls = [
     ]
-    password = 'guoxinpeng'
-    email = ''
-    phone = '18811040172'
     headers = {
         'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Encoding':'gzip, deflate, sdch, br',
@@ -32,124 +28,88 @@ class user(scrapy.Spider):
     }
 
     def start_requests(self):
-        yield scrapy.Request(url = "http://www.zhihu.com/#signin", meta = {'cookiejar':1}, headers = self.headers, callback = self.post_login)
         #重写了爬虫类的方法, 实现了自定义请求, 运行成功后会调用callback回调函数
-
-    def post_login(self, response):
-        xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
-        if self.phone:
-            return scrapy.FormRequest(
-                'http://www.zhihu.com/login/phone_num',
-                meta={'cookiejar': response.meta['cookiejar']},
-                formdata={'_xsrf': xsrf, 'password': self.password, 'remember_me' : "True", 'phone_num':self.phone},
-                callback=self.set_refer,
-                dont_filter=True
-            )
-        else:
-            return scrapy.FormRequest(
-                'http://www.zhihu.com/login/email',
-                meta={'cookiejar': response.meta['cookiejar']},
-                formdata={'_xsrf': xsrf, 'password': self.password, 'captcha_type': 'cn', 'remember_me' : "True", 'email':self.email},
-                callback=self.set_refer,
-                dont_filter=True
-            )
-
-    def set_refer(self, response):
         print '--------------------set_refer------------------'
-        yield scrapy.Request(url = "https://www.zhihu.com/topic/19553622/followers", meta = {'cookiejar': 1},  callback=self.parse_follower)
+        request_url = self.get_url()
+        if request_url:
+            print request_url
+            yield scrapy.Request(url = request_url, headers=self.headers, callback=self.parse_item)
 
-    def parse_follower(self, response):
-        scrapy_url = response.url
-        print 'parse topic follower'
-        urls = response.css('.zm-list-avatar-medium::attr("href")').extract()
-        self.parse_urls(urls)
-        time.sleep(randint(1, 2))
-        print 'start topic json'
-        xsrf = response.css('input[name=_xsrf]::attr("value")')[0].extract()
-        headers = self.headers
-        headers['X-Xsrftoken'] = xsrf
-        print 'start  offset  end'
-        self.start = response.css('.zm-person-item::attr("id")')[-1].extract().encode('utf-8')[3:]
-        self.offset = 40
-        self.end = False
+    def get_employment(self, employments):
+        if not len(employments):
+            return 0
+        if employments[0].get('job'):
+            return employments[0]['job']['name'].encode('utf-8')
+        else:
+            return employments[0]['name'].encode('utf-8')
 
-        while (not self.end) :
-            print 'request json'
-            time.sleep(randint(1, 2))
-            yield scrapy.FormRequest(
-                url = scrapy_url,
-                meta = {'cookiejar': response.meta['cookiejar']},
-                formdata = {'offset' : str(self.offset), 'start' : self.start},
-                callback = self.parse_json,
-                headers = headers,
-                dont_filter = True
-            )
-
-    def parse_json(self, response):
-        print 'parsing '
-        print response.url
-        print self.start
-        print self.offset
-        jsonresponse = json.loads(response.body_as_unicode())
-        body = jsonresponse['msg'][1]
-        if jsonresponse['msg'][0] < 20:
-            self.end = True
-        self.offset = self.offset + 20
-        self.start = Selector(text=body).css('.zm-person-item::attr("id")')[-1].extract().encode('utf-8')[3:]
-        urls = Selector(text=body).css('.zm-list-avatar-medium::attr("href")').extract()
-        yield self.parse_urls(urls)
-
-    def parse_urls(self, urls):
-        write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
-        for i in urls:
-            sql = """insert ignore into url(url) values (%s)"""
-            print """insert ignore into url(url) values ('"""+ i  +"""')"""
-            resQuery = write_db.execute(sql, (i))
-        write_db.__delete__()
+    def get_url(self):
+        master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
+        sql = """select * from url where status = 0 limit 1"""
+        res = master_db.query(sql, ())
+        if not res:
+            master_db.__delete__()
+            return False
+        url = res[0]['url']
+        master_db.__delete__()
+        request_url = self.base_url + url
+        return request_url
 
     def parse_item(self, response):
         print 'parsing response  ', response.url
+        body = response.css('#data::attr("data-state")')[0].extract().encode('utf-8')
+        state = json.loads(body)
+        people = response.url[29:]
+        users = state['entities']['users'][people]
         zhihu_item = ZhiHuItem()
-        zhihu_item['id'] = response.css('.zm-rich-follow-btn::attr("data-id")').extract()
-        zhihu_item['name'] = response.css('.title-section  .name::text').extract()
-        zhihu_item['avatar'] = response.css('.zm-profile-header-main  .Avatar::attr("src")').extract()
-        zhihu_item['remark'] = response.css('.title-section  .bio::text').extract()
-        zhihu_item['agree'] = response.css('.zm-profile-header-user-agree  strong::text').extract()
-        zhihu_item['thanks'] = response.css('.zm-profile-header-user-thanks  strong::text').extract()
-        zhihu_item['location'] = response.css('.zm-profile-header-user-describe .items .info-wrap .location::attr("title")').extract()
-        zhihu_item['business'] = response.css('.zm-profile-header-user-describe .items .info-wrap .business::attr("title")').extract()
-        zhihu_item['gender'] = response.css('.zm-profile-header-user-describe .items .edit-wrap input[checked=checked]::attr("value")').extract()
-        zhihu_item['employment'] = response.css('.zm-profile-header-user-describe .items .info-wrap .employment::attr("title")').extract()
-        zhihu_item['education'] = response.css('.zm-profile-header-user-describe .items .education::attr("title")').extract()
-        zhihu_item['education_extra'] = response.css('.zm-profile-header-user-describe .items .education-extra::attr("title")').extract()
-        zhihu_item['asks'] = response.css('.profile-navbar a[href*=asks] span::text').extract()
-        zhihu_item['answers'] = response.css('.profile-navbar a[href*=answers] span::text').extract()
-        zhihu_item['posts'] = response.css('.profile-navbar a[href*=posts] span::text').extract()
-        zhihu_item['collections'] = response.css('.profile-navbar a[href*=collections] span::text').extract()
-        zhihu_item['logs'] = response.css('.profile-navbar a[href*=logs] span::text').extract()
-        print '=============================================================================================================='
-        zhihu_item['id'] = zhihu_item['id'][0].encode('utf-8') if zhihu_item['id'] else 0
-        zhihu_item['name'] = zhihu_item['name'][0].encode('utf-8') if zhihu_item['name'] else 0
-        zhihu_item['avatar'] = zhihu_item['avatar'][0].encode('utf-8') if zhihu_item['avatar'] else 0
-        zhihu_item['remark'] = zhihu_item['remark'][0].encode('utf-8') if zhihu_item['remark'] else 0
-        zhihu_item['agree'] = zhihu_item['agree'][0].encode('utf-8') if zhihu_item['agree'] else 0
-        zhihu_item['thanks'] = zhihu_item['thanks'][0].encode('utf-8') if zhihu_item['thanks'] else 0
-        zhihu_item['location'] = zhihu_item['location'][0].encode('utf-8') if zhihu_item['location'] else 0
-        zhihu_item['business'] = zhihu_item['business'][0].encode('utf-8') if zhihu_item['business'] else 0
-        zhihu_item['gender'] = zhihu_item['gender'][0].encode('utf-8') if zhihu_item['gender'] else 0
-        zhihu_item['employment'] = zhihu_item['employment'][0].encode('utf-8') if zhihu_item['employment'] else 0
-        zhihu_item['education'] = zhihu_item['education'][0].encode('utf-8') if zhihu_item['education'] else 0
-        zhihu_item['education_extra'] = zhihu_item['education_extra'][0].encode('utf-8') if zhihu_item['education_extra'] else 0
-        zhihu_item['asks'] = zhihu_item['asks'][0].encode('utf-8') if zhihu_item['asks'] else 0
-        zhihu_item['answers'] = zhihu_item['answers'][0].encode('utf-8') if zhihu_item['answers'] else 0
-        zhihu_item['posts'] = zhihu_item['posts'][0].encode('utf-8') if zhihu_item['posts'] else 0
-        zhihu_item['collections'] = zhihu_item['collections'][0].encode('utf-8') if zhihu_item['collections'] else 0
-        zhihu_item['logs'] = zhihu_item['logs'][0].encode('utf-8') if zhihu_item['logs'] else 0
-        
+        zhihu_item['id'] = users['id']
+        zhihu_item['name'] = users['name'].encode('utf-8')
+        zhihu_item['avatar'] = users['avatarUrl'].replace('_is.', '_xl.')
+        zhihu_item['remark'] = users['headline'].encode('utf-8') if users['headline'] else 0
+        zhihu_item['agree'] = users['voteupCount']
+        zhihu_item['thanks'] = users['thankedCount']
+        zhihu_item['location'] = users['locations'][0]['name'].encode('utf-8') if users['locations'] else 0
+        zhihu_item['business'] = users['business']['name'].encode('utf-8') if users.get('business', False) else 0
+        zhihu_item['gender'] = users['gender']
+        zhihu_item['employment'] = self.get_employment(users['employments'])
+        zhihu_item['education'] = users['educations'][0]['school']['name'].encode('utf-8') if users.get('educations', False) else 0
+        zhihu_item['education_extra'] = users['educations'][0]['major']['name'].encode('utf-8') if users.get('educations', False) and users['educations'][0].get('major', False) else 0
+        zhihu_item['asks'] = users['questionCount']
+        zhihu_item['answers'] = users['answerCount']
+        zhihu_item['posts'] = users['articlesCount']
+        zhihu_item['collections'] = users['favoriteCount']
+        zhihu_item['logs'] = users['logsCount']
+        zhihu_item['url'] = response.url[21:]
+        zhihu_item['following'] = users['followingCount']
+        zhihu_item['followers'] = users['followerCount']
+        zhihu_item['lives'] = users['hostedLiveCount']
+        zhihu_item['topics'] = users['followingTopicCount']
+        zhihu_item['columns'] = users['followingColumnsCount']
+        zhihu_item['questions'] = users['followingQuestionCount']
+        zhihu_item['weibo'] = users['sinaWeiboUrl'] if users.get('sinaWeiboUrl', False) else 0
+
+        print zhihu_item
         if zhihu_item['id']:
            print '----> db <----'
-           write_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
-           sql = """insert ignore into user (u_id, name, avatar, remark, agree, thanks, location, business, gender, employment, education, education_extra, asks, answers, posts, collections, logs, url) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-           resQuery = write_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], response.url))
-           write_db.__delete__()
-           print 'resQuery -------   ', resQuery
+           master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
+           sql = """insert ignore into user (
+           u_id, name, avatar, remark, 
+           agree, thanks, location, business, 
+           gender, employment, education, education_extra, 
+           asks, answers, posts, collections, 
+           logs, url, following, followers, 
+           lives, topics, columns, questions, 
+           weibo) 
+           values (
+           %s, %s, %s, %s, 
+           %s, %s, %s, %s, 
+           %s, %s, %s, %s, 
+           %s, %s, %s, %s, 
+           %s, %s, %s, %s, 
+           %s, %s, %s, %s, 
+           %s) """
+           resQuery = master_db.execute(sql, (zhihu_item['id'], zhihu_item['name'], zhihu_item['avatar'], zhihu_item['remark'], zhihu_item['agree'], zhihu_item['thanks'], zhihu_item['location'], zhihu_item['business'], zhihu_item['gender'], zhihu_item['employment'], zhihu_item['education'], zhihu_item['education_extra'], zhihu_item['asks'], zhihu_item['answers'], zhihu_item['posts'], zhihu_item['collections'], zhihu_item['logs'], zhihu_item['url'], zhihu_item['following'], zhihu_item['followers'], zhihu_item['lives'], zhihu_item['topics'], zhihu_item['columns'], zhihu_item['questions'], zhihu_item['weibo']))
+           sql = """update url set status = 1 where url = %s"""
+           master_db.execute(sql, (zhihu_item['url']))
+           master_db.__delete__()
+
