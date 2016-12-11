@@ -41,7 +41,10 @@ class user(scrapy.Spider):
         if employments[0].get('job'):
             return employments[0]['job']['name'].encode('utf-8')
         else:
-            return employments[0]['name'].encode('utf-8')
+            if employments[0].get('name'):
+                return employments[0]['name'].encode('utf-8')
+            else:
+                return 0
 
     def get_url(self):
         master_db = DB(MySQL['db_host'], MySQL['db_port'], MySQL['db_user'], MySQL['db_password'], MySQL['db_dbname']) 
@@ -60,7 +63,10 @@ class user(scrapy.Spider):
         body = response.css('#data::attr("data-state")')[0].extract().encode('utf-8')
         state = json.loads(body)
         people = response.url[29:]
-        users = state['entities']['users'][people]
+        if state['entities']['users'].get(people):
+            users = state['entities']['users'][people]
+        else:
+            users = state['entities']['users']['null']
         zhihu_item = ZhiHuItem()
         zhihu_item['id'] = users['id']
         zhihu_item['name'] = users['name'].encode('utf-8')
