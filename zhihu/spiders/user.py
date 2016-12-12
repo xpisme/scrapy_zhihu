@@ -89,7 +89,7 @@ class user(scrapy.Spider):
         zhihu_item['business'] = users['business']['name'].encode('utf-8') if users.get('business', False) else 0
         zhihu_item['gender'] = users['gender']
         zhihu_item['employment'] = self.get_employment(users['employments'])
-        zhihu_item['education'] = users['educations'][0]['school']['name'].encode('utf-8') if users.get('educations', False) else 0
+        zhihu_item['education'] = users['educations'][0]['school']['name'].encode('utf-8') if users.get('educations', False) and users['educations'][0].get('school', False) else 0
         zhihu_item['education_extra'] = users['educations'][0]['major']['name'].encode('utf-8') if users.get('educations', False) and users['educations'][0].get('major', False) else 0
         zhihu_item['asks'] = users['questionCount']
         zhihu_item['answers'] = users['answerCount']
