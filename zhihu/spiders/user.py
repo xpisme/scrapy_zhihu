@@ -87,7 +87,7 @@ class user(scrapy.Spider):
         zhihu_item['followers'] = response.css('.zm-profile-side-following strong')[1].extract()
         zhihu_item['topics'] = response.css('.zg-link-litblue')[1].extract()
         zhihu_item['columns'] = response.css('.zg-link-litblue')[0].extract()
-        print '=============================================================================================================='
+        print '______________________________________________________________________________________________________________'
         zhihu_item['id'] = zhihu_item['id'][0].encode('utf-8') if zhihu_item['id'] else 0
         zhihu_item['name'] = zhihu_item['name'][0].encode('utf-8') if zhihu_item['name'] else 0
         zhihu_item['avatar'] = zhihu_item['avatar'][0].encode('utf-8') if zhihu_item['avatar'] else 0
