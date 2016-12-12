@@ -14,18 +14,6 @@ class user(scrapy.Spider):
     allowed_domains = ["www.zhihu.com", "xpisme.com"]
     start_urls = [
     ]
-    headers = {
-        'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Encoding':'gzip, deflate, sdch, br',
-        'Accept-Language':'zh-CN,zh;q=0.8,en;q=0.6',
-        'Cache-Control':'max-age=0',
-        'Connection':'keep-alive',
-        'Host':'www.zhihu.com',
-        'Upgrade-Insecure-Requests':'1',
-        'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36',
-        "Referer": "https://www.zhihu.com",
-        "Origin" : "https://www.zhihu.com"
-    }
 
     def errback_httpbin(self, failure):
         url = failure.request.url
@@ -41,7 +29,6 @@ class user(scrapy.Spider):
         if request_url:
             print request_url
             yield scrapy.Request(url=request_url, 
-            headers=self.headers, 
             callback=self.parse_item, 
             dont_filter=True, 
             errback=self.errback_httpbin)
@@ -71,6 +58,9 @@ class user(scrapy.Spider):
     
     def parse_item(self, response):
         print 'parsing response  ', response.url
+        print len(response.css('#data::attr("data-state")'))
+        if len(response.css('#data::attr("data-state")')) < 1:
+            return False
         body = response.css('#data::attr("data-state")')[0].extract().encode('utf-8')
         state = json.loads(body)
         people = response.url[29:]
@@ -128,4 +118,3 @@ class user(scrapy.Spider):
            sql = """update url set status = 1 where url = %s"""
            self.master_db.execute(sql, (zhihu_item['url']))
            self.master_db.__delete__()
-
