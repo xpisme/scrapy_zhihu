@@ -52,6 +52,8 @@ class user(scrapy.Spider):
             self.master_db.__delete__()
             return False
         url = res[0]['url']
+        sql = """update url set status = 2 where url = %s"""
+        self.master_db.execute(sql, (url))
         request_url = self.base_url + url
         return request_url
     
