@@ -58,11 +58,6 @@ class user(scrapy.Spider):
     
     def parse_item(self, response):
         print 'parsing response  ', response.url
-<<<<<<< HEAD
-        print len(response.css('#data::attr("data-state")'))
-        if len(response.css('#data::attr("data-state")')) < 1:
-            return False
-=======
         if len(response.css('#data::attr("data-state")')) < 1:
             self.parse_old(response)
         else:
@@ -139,7 +134,6 @@ class user(scrapy.Spider):
 
 
     def parse_react(self, response):
->>>>>>> 03eebef6f5db0adc682b49dc6112827220b67ce0
         body = response.css('#data::attr("data-state")')[0].extract().encode('utf-8')
         state = json.loads(body)
         people = response.url[29:]
