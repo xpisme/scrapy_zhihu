@@ -24,14 +24,16 @@ class user(scrapy.Spider):
 
     def start_requests(self):
         #重写了爬虫类的方法, 实现了自定义请求, 运行成功后会调用callback回调函数
-        print '--------------------set_refer------------------'
-        request_url = self.get_url()
-        if request_url:
-            print request_url
-            yield scrapy.Request(url=request_url, 
-            callback=self.parse_item, 
-            dont_filter=True, 
-            errback=self.errback_httpbin)
+        print '--------------------start request------------------'
+        while (True):
+            time.sleep(1)
+            request_url = self.get_url()
+            if request_url:
+                print request_url
+                yield scrapy.Request(url=request_url, 
+                callback=self.parse_item, 
+                dont_filter=True, 
+                errback=self.errback_httpbin)
 
     def get_employment(self, employments):
         if not len(employments):
